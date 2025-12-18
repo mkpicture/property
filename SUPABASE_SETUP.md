@@ -122,3 +122,4 @@ L'application utilise Row Level Security (RLS) pour s'assurer que :
 - Les utilisateurs ne peuvent modifier que leurs propres données
 - Les fichiers sont stockés de manière sécurisée dans Supabase Storage
 
+
