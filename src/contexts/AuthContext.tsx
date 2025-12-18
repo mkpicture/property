@@ -58,6 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
+      // Vérifier que Supabase est configuré
+      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || '';
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        return {
+          error: {
+            message: 'Supabase n\'est pas configuré. Vérifiez vos variables d\'environnement.',
+            code: 'CONFIG_ERROR'
+          }
+        };
+      }
+
       // Validation basique
       if (!email || !password || !name) {
         return { 
@@ -76,24 +87,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Inscription avec Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            full_name: name.trim(),
+      let data, error;
+      
+      try {
+        const result = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              full_name: name.trim(),
+            },
+            emailRedirectTo: `${window.location.origin}/auth`,
           },
-          emailRedirectTo: `${window.location.origin}/auth`,
-        },
-      });
+        });
+        
+        data = result.data;
+        error = result.error;
+      } catch (networkError: any) {
+        // Gérer les erreurs réseau (failed to fetch, CORS, etc.)
+        console.error('Erreur réseau lors de l\'inscription:', networkError);
+        
+        if (networkError.message?.includes('fetch') || networkError.message?.includes('network')) {
+          return {
+            error: {
+              message: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.',
+              code: 'NETWORK_ERROR',
+              details: networkError.message
+            }
+          };
+        }
+        
+        if (networkError.message?.includes('CORS')) {
+          return {
+            error: {
+              message: 'Erreur CORS. Vérifiez la configuration de votre projet Supabase (Site URL et Redirect URLs).',
+              code: 'CORS_ERROR'
+            }
+          };
+        }
+        
+        return {
+          error: {
+            message: networkError.message || 'Erreur de connexion au serveur',
+            code: 'CONNECTION_ERROR',
+            details: networkError.message
+          }
+        };
+      }
 
       if (error) {
-        return { error };
+        // Améliorer les messages d'erreur
+        let errorMessage = error.message || 'Une erreur est survenue lors de l\'inscription';
+        
+        if (error.message?.includes('fetch')) {
+          errorMessage = 'Impossible de se connecter au serveur Supabase. Vérifiez votre connexion et que l\'URL est correcte.';
+        } else if (error.message?.includes('User already registered')) {
+          errorMessage = 'Cet email est déjà enregistré. Essayez de vous connecter.';
+        } else if (error.message?.includes('Invalid email')) {
+          errorMessage = 'Adresse email invalide.';
+        }
+        
+        return { 
+          error: {
+            ...error,
+            message: errorMessage
+          }
+        };
       }
 
       // Le trigger dans Supabase créera automatiquement le profil
       // Mais on peut aussi le créer manuellement si le trigger n'existe pas
-      if (data.user) {
+      if (data?.user) {
         try {
           const { error: profileError } = await supabase
             .from('profiles')
@@ -106,11 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .single();
 
           // Si l'insertion échoue mais que l'utilisateur existe, c'est peut-être que le trigger l'a déjà créé
-          if (profileError && !profileError.message.includes('duplicate')) {
+          if (profileError && !profileError.message.includes('duplicate') && !profileError.message.includes('already exists')) {
             console.warn('Erreur lors de la création du profil:', profileError);
             // On continue quand même car le trigger peut avoir créé le profil
           }
-        } catch (profileErr) {
+        } catch (profileErr: any) {
           console.warn('Erreur lors de la création du profil:', profileErr);
           // On continue quand même
         }
@@ -118,9 +182,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null, data };
     } catch (err: any) {
+      console.error('Erreur inattendue lors de l\'inscription:', err);
+      
+      // Détecter les erreurs réseau
+      if (err.message?.includes('fetch') || err.name === 'TypeError' || err.message?.includes('network')) {
+        return {
+          error: {
+            message: 'Erreur de connexion. Vérifiez votre connexion internet et que Supabase est accessible.',
+            code: 'NETWORK_ERROR',
+            details: err.message
+          }
+        };
+      }
+      
       return { 
         error: { 
-          message: err.message || 'Une erreur est survenue lors de l\'inscription' 
+          message: err.message || 'Une erreur inattendue est survenue lors de l\'inscription',
+          code: 'UNKNOWN_ERROR',
+          details: err.message
         } 
       };
     }

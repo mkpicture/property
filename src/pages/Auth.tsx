@@ -121,22 +121,39 @@ export default function Auth() {
         const { error, data } = await signUp(formData.email, formData.password, formData.name);
         if (error) {
           let errorMessage = "Une erreur est survenue lors de l'inscription.";
+          let errorTitle = "Erreur d'inscription";
           
-          if (error.message) {
-            if (error.message.includes("User already registered")) {
+          // Gérer les différents types d'erreurs
+          if (error.code === 'CONFIG_ERROR' || error.code === 'NETWORK_ERROR' || error.code === 'CORS_ERROR') {
+            errorTitle = "Problème de configuration";
+            errorMessage = error.message || errorMessage;
+          } else if (error.message) {
+            if (error.message.includes("User already registered") || error.message.includes("already registered")) {
               errorMessage = "Cet email est déjà enregistré. Essayez de vous connecter.";
-            } else if (error.message.includes("Password")) {
+            } else if (error.message.includes("Password") || error.message.includes("password")) {
               errorMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+            } else if (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("Failed to fetch")) {
+              errorTitle = "Erreur de connexion";
+              errorMessage = "Impossible de se connecter au serveur. Vérifiez votre connexion internet et que Supabase est correctement configuré.";
+            } else if (error.message.includes("CORS")) {
+              errorTitle = "Erreur de configuration";
+              errorMessage = "Erreur CORS. Vérifiez la configuration de votre projet Supabase (Site URL et Redirect URLs dans Authentication > Settings).";
             } else {
               errorMessage = error.message;
             }
           }
 
           toast({
-            title: "Erreur d'inscription",
+            title: errorTitle,
             description: errorMessage,
             variant: "destructive",
+            duration: 5000,
           });
+          
+          // Afficher des détails supplémentaires en développement
+          if (import.meta.env.DEV && error.details) {
+            console.error('Détails de l\'erreur:', error.details);
+          }
         } else {
           // Vérifier si l'email nécessite une confirmation
           const needsConfirmation = data?.user && !data.session;
