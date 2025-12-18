@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: any; data?: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any; data?: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -57,35 +57,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
+    try {
+      // Validation basique
+      if (!email || !password || !name) {
+        return { 
+          error: { 
+            message: 'Tous les champs sont requis' 
+          } 
+        };
+      }
+
+      if (password.length < 6) {
+        return { 
+          error: { 
+            message: 'Le mot de passe doit contenir au moins 6 caractères' 
+          } 
+        };
+      }
+
+      // Inscription avec Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: name.trim(),
+          },
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
-      },
-    });
-
-    if (!error && data.user) {
-      // Créer le profil utilisateur dans la table profiles
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: email,
-        full_name: name,
-        created_at: new Date().toISOString(),
       });
-    }
 
-    return { error };
+      if (error) {
+        return { error };
+      }
+
+      // Le trigger dans Supabase créera automatiquement le profil
+      // Mais on peut aussi le créer manuellement si le trigger n'existe pas
+      if (data.user) {
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              email: email.trim().toLowerCase(),
+              full_name: name.trim(),
+            })
+            .select()
+            .single();
+
+          // Si l'insertion échoue mais que l'utilisateur existe, c'est peut-être que le trigger l'a déjà créé
+          if (profileError && !profileError.message.includes('duplicate')) {
+            console.warn('Erreur lors de la création du profil:', profileError);
+            // On continue quand même car le trigger peut avoir créé le profil
+          }
+        } catch (profileErr) {
+          console.warn('Erreur lors de la création du profil:', profileErr);
+          // On continue quand même
+        }
+      }
+
+      return { error: null, data };
+    } catch (err: any) {
+      return { 
+        error: { 
+          message: err.message || 'Une erreur est survenue lors de l\'inscription' 
+        } 
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      if (!email || !password) {
+        return { 
+          error: { 
+            message: 'Email et mot de passe sont requis' 
+          } 
+        };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      return { error, data };
+    } catch (err: any) {
+      return { 
+        error: { 
+          message: err.message || 'Une erreur est survenue lors de la connexion' 
+        } 
+      };
+    }
   };
 
   const signOut = async () => {

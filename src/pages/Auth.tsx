@@ -29,51 +29,132 @@ export default function Auth() {
     }
   }, [user, loading, navigate]);
 
+  const validateForm = () => {
+    if (!formData.email) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez saisir votre email.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Email invalide",
+        description: "Veuillez saisir une adresse email valide.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez saisir votre mot de passe.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!isLogin && !formData.name.trim()) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez saisir votre nom complet.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!isLogin && formData.password.length < 6) {
+      toast({
+        title: "Mot de passe trop court",
+        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await signIn(formData.email, formData.password);
+        const { error, data } = await signIn(formData.email, formData.password);
         if (error) {
+          let errorMessage = "Une erreur est survenue lors de la connexion.";
+          
+          if (error.message) {
+            if (error.message.includes("Invalid login credentials")) {
+              errorMessage = "Email ou mot de passe incorrect.";
+            } else if (error.message.includes("Email not confirmed")) {
+              errorMessage = "Veuillez confirmer votre email avant de vous connecter.";
+            } else {
+              errorMessage = error.message;
+            }
+          }
+
           toast({
             title: "Erreur de connexion",
-            description: error.message || "Une erreur est survenue lors de la connexion.",
+            description: errorMessage,
             variant: "destructive",
           });
-        } else {
+        } else if (data?.session) {
           toast({
             title: "Connexion réussie",
             description: "Vous allez être redirigé vers le tableau de bord.",
           });
+          // La redirection se fera automatiquement via le useEffect qui surveille user
           navigate("/dashboard");
         }
       } else {
-        if (!formData.name) {
-          toast({
-            title: "Champ manquant",
-            description: "Veuillez saisir votre nom complet.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-        const { error } = await signUp(formData.email, formData.password, formData.name);
+        const { error, data } = await signUp(formData.email, formData.password, formData.name);
         if (error) {
+          let errorMessage = "Une erreur est survenue lors de l'inscription.";
+          
+          if (error.message) {
+            if (error.message.includes("User already registered")) {
+              errorMessage = "Cet email est déjà enregistré. Essayez de vous connecter.";
+            } else if (error.message.includes("Password")) {
+              errorMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+            } else {
+              errorMessage = error.message;
+            }
+          }
+
           toast({
             title: "Erreur d'inscription",
-            description: error.message || "Une erreur est survenue lors de l'inscription.",
+            description: errorMessage,
             variant: "destructive",
           });
         } else {
+          // Vérifier si l'email nécessite une confirmation
+          const needsConfirmation = data?.user && !data.session;
+          
           toast({
             title: "Compte créé avec succès",
-            description: "Vérifiez votre email pour confirmer votre compte.",
+            description: needsConfirmation
+              ? "Un email de confirmation a été envoyé. Vérifiez votre boîte de réception."
+              : "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
           });
-          // Optionnel: rediriger vers la connexion après inscription
+          
+          // Réinitialiser le formulaire et passer en mode connexion
+          setFormData({
+            email: formData.email, // Garder l'email pour faciliter la connexion
+            password: "",
+            name: "",
+          });
           setIsLogin(true);
-          setFormData({ ...formData, name: "" });
         }
       }
     } catch (error: any) {
