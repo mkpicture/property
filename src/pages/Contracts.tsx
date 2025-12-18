@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr } from "date-fns/locale/fr";
 
 interface Contract {
   id: string;
