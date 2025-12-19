@@ -24,7 +24,7 @@ const isConfigured = supabaseUrl && supabaseAnonKey &&
   supabaseAnonKey !== '' &&
   supabaseUrl.startsWith('http') &&
   !supabaseUrl.includes('placeholder') &&
-  supabaseAnonKey.length > 50; // Les clés Supabase sont longues
+  (supabaseAnonKey.length > 20 || supabaseAnonKey.startsWith('sb_publishable_')); // Support des clés publishable
 
 // Créer le client Supabase
 let supabase: SupabaseClient;
