@@ -33,7 +33,8 @@ interface TenantFormData {
 }
 
 export default function TenantForm() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const id = params.id;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,7 +54,7 @@ export default function TenantForm() {
     notes: "",
   });
 
-  const isEditing = !!id;
+  const isEditing = Boolean(id);
 
   useEffect(() => {
     if (user) {

@@ -34,7 +34,8 @@ interface PropertyFormData {
 }
 
 export default function PropertyForm() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const id = params.id;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,7 +55,7 @@ export default function PropertyForm() {
     image_url: "",
   });
 
-  const isEditing = !!id;
+  const isEditing = Boolean(id);
 
   useEffect(() => {
     if (isEditing && user && id) {
