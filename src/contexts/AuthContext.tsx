@@ -58,16 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔐 Événement d\'authentification:', event, session ? 'Session active' : 'Pas de session');
       }
       
-      // Pour SIGNED_IN, s'assurer que la session est bien récupérée
+      // Mettre à jour l'état avec la session
+      updateAuthState(session);
+      
+      // Pour SIGNED_IN sans session, récupérer la session
       if (event === 'SIGNED_IN' && !session) {
-        // Si l'événement est SIGNED_IN mais pas de session, récupérer la session
-        const { data: { session: newSession } } = await supabase.auth.getSession();
-        updateAuthState(newSession);
-        if (newSession) {
-          console.log('✅ Session récupérée après connexion:', newSession.user.email);
+        try {
+          const { data: { session: newSession } } = await supabase.auth.getSession();
+          if (newSession) {
+            updateAuthState(newSession);
+            console.log('✅ Session récupérée après connexion:', newSession.user.email);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération de la session:', error);
         }
-      } else {
-        updateAuthState(session);
       }
       
       // Gérer les événements spécifiques

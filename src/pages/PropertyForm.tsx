@@ -61,7 +61,8 @@ export default function PropertyForm() {
     if (isEditing && user && id) {
       loadProperty();
     }
-  }, [id, user, isEditing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user]);
 
   const loadProperty = async () => {
     if (!id || !user) return;

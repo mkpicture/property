@@ -63,7 +63,8 @@ export default function TenantForm() {
         loadTenant();
       }
     }
-  }, [id, user, isEditing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user]);
 
   const loadProperties = async () => {
     if (!user) return;
