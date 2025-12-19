@@ -25,7 +25,11 @@ export default function Auth() {
   // Rediriger si l'utilisateur est déjà connecté
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard", { replace: true });
+      // Petit délai pour éviter les redirections multiples
+      const timer = setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [user, loading, navigate]);
 
@@ -114,17 +118,18 @@ export default function Auth() {
             title: "Connexion réussie",
             description: "Vous allez être redirigé vers le tableau de bord.",
           });
-          // Attendre un peu pour que la session soit mise à jour
+          // La redirection se fera automatiquement via le useEffect qui surveille user
+          // Attendre un peu pour que l'état soit mis à jour
           setTimeout(() => {
             navigate("/dashboard", { replace: true });
-          }, 100);
+          }, 200);
         } else {
-          // Si pas de session mais pas d'erreur, attendre un peu
-          setTimeout(() => {
-            if (user) {
-              navigate("/dashboard", { replace: true });
-            }
-          }, 500);
+          // Si pas de session mais pas d'erreur, c'est peut-être que l'email nécessite confirmation
+          toast({
+            title: "Connexion en attente",
+            description: "Vérifiez votre email pour confirmer votre compte.",
+            variant: "default",
+          });
         }
       } else {
         const { error, data } = await signUp(formData.email, formData.password, formData.name);

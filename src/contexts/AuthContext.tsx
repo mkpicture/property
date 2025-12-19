@@ -21,31 +21,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     
+    // Fonction pour mettre à jour l'état d'authentification
+    const updateAuthState = (session: Session | null) => {
+      if (!mounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+    
     // Récupérer la session initiale
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (!mounted) return;
         if (error) {
           console.error('Erreur lors de la récupération de la session:', error);
+          // Même en cas d'erreur, on met à jour l'état (pas de session)
+          updateAuthState(null);
+        } else {
+          updateAuthState(session);
         }
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
       })
       .catch((error) => {
         if (!mounted) return;
         console.error('Erreur lors de la récupération de la session:', error);
-        setLoading(false);
+        updateAuthState(null);
       });
 
     // Écouter les changements d'authentification
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      
+      // Log des événements en développement
+      if (import.meta.env.DEV) {
+        console.log('🔐 Événement d\'authentification:', event, session ? 'Session active' : 'Pas de session');
+      }
+      
+      updateAuthState(session);
+      
+      // Gérer les événements spécifiques
+      if (event === 'SIGNED_IN' && session) {
+        console.log('✅ Utilisateur connecté:', session.user.email);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('👋 Utilisateur déconnecté');
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('🔄 Token rafraîchi');
+      }
     });
 
     return () => {
@@ -255,16 +277,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (error.message?.includes('fetch')) {
           errorMessage = 'Impossible de se connecter au serveur Supabase. Vérifiez votre connexion et que l\'URL est correcte.';
-        } else if (error.message?.includes('Invalid login credentials')) {
+        } else if (error.message?.includes('Invalid login credentials') || error.message?.includes('invalid_credentials')) {
           errorMessage = 'Email ou mot de passe incorrect.';
-        } else if (error.message?.includes('Email not confirmed')) {
-          errorMessage = 'Veuillez confirmer votre email avant de vous connecter.';
+        } else if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+          errorMessage = 'Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.';
+        } else if (error.message?.includes('User not found')) {
+          errorMessage = 'Aucun compte trouvé avec cet email.';
+        } else if (error.message?.includes('Too many requests')) {
+          errorMessage = 'Trop de tentatives. Veuillez patienter quelques instants.';
         }
         
         return {
           error: {
             ...error,
             message: errorMessage
+          }
+        };
+      }
+
+      // Vérifier que la session est bien créée
+      if (!data?.session) {
+        return {
+          error: {
+            message: 'La session n\'a pas pu être créée. Veuillez réessayer.',
+            code: 'SESSION_ERROR'
           }
         };
       }
@@ -294,7 +330,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+      } else {
+        // Forcer la mise à jour de l'état
+        setSession(null);
+        setUser(null);
+        console.log('✅ Déconnexion réussie');
+      }
+    } catch (err) {
+      console.error('Erreur inattendue lors de la déconnexion:', err);
+      // Forcer la mise à jour même en cas d'erreur
+      setSession(null);
+      setUser(null);
+    }
   };
 
   return (
