@@ -9,7 +9,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Properties from "./pages/Properties";
+import PropertyForm from "./pages/PropertyForm";
 import Tenants from "./pages/Tenants";
+import TenantForm from "./pages/TenantForm";
 import Payments from "./pages/Payments";
 import Contracts from "./pages/Contracts";
 import NotFound from "./pages/NotFound";
@@ -43,10 +45,42 @@ const App = () => (
               }
             />
             <Route
+              path="/properties/new"
+              element={
+                <ProtectedRoute>
+                  <PropertyForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/properties/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <PropertyForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tenants"
               element={
                 <ProtectedRoute>
                   <Tenants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenants/new"
+              element={
+                <ProtectedRoute>
+                  <TenantForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tenants/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <TenantForm />
                 </ProtectedRoute>
               }
             />

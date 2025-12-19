@@ -6,6 +6,7 @@ import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { Building2, Users, CreditCard, AlertTriangle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { formatFCFA } from "@/lib/currency";
 
 // Demo data
 const stats = [
@@ -27,7 +28,7 @@ const stats = [
   },
   {
     title: "Revenus Mensuels",
-    value: "15 800€",
+    value: formatFCFA(15800),
     subtitle: "Mai 2024",
     icon: CreditCard,
     variant: "default" as const,
@@ -35,7 +36,7 @@ const stats = [
   },
   {
     title: "Loyers Impayés",
-    value: "2 350€",
+    value: formatFCFA(2350),
     subtitle: "3 locataires concernés",
     icon: AlertTriangle,
     variant: "destructive" as const,

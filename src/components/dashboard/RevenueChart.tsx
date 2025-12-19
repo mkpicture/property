@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatFCFA } from "@/lib/currency";
 
 const data = [
   { month: "Jan", revenus: 4200, depenses: 1200 },
@@ -55,7 +56,7 @@ export function RevenueChart({ className }: RevenueChartProps) {
             <YAxis
               tick={{ fontSize: 12, fill: "hsl(220, 15%, 50%)" }}
               axisLine={{ stroke: "hsl(210, 20%, 90%)" }}
-              tickFormatter={(value) => `${value}€`}
+              tickFormatter={(value) => formatCurrency(value, { showSymbol: false })}
             />
             <Tooltip
               contentStyle={{
@@ -64,7 +65,7 @@ export function RevenueChart({ className }: RevenueChartProps) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px -4px hsl(220 30% 15% / 0.12)",
               }}
-              formatter={(value: number) => [`${value}€`, ""]}
+              formatter={(value: number) => [formatFCFA(value), ""]}
             />
             <Area
               type="monotone"

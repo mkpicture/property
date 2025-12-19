@@ -7,8 +7,12 @@ interface ImportMetaEnv {
   // Support Next.js pour compatibilité
   readonly NEXT_PUBLIC_SUPABASE_URL?: string;
   readonly NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?: string;
+  readonly DEV: boolean; // Development mode flag
+  readonly MODE: string; // Environment mode
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+  readonly DEV: boolean; // Development mode flag
+  readonly MODE: string; // Environment mode
 }

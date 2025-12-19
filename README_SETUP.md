@@ -1,174 +1,158 @@
-# Guide de Configuration - ImmoGest avec Supabase
+# Guide de Configuration - Property Pal
 
-## 🚀 Fonctionnalités Implémentées
+Ce guide explique comment configurer toutes les fonctionnalités de l'application.
 
-✅ **Authentification complète avec Supabase**
-- Inscription de nouveaux utilisateurs
-- Connexion avec email/mot de passe
-- Gestion de session automatique
-- Protection des routes
+## 📋 Table des matières
 
-✅ **Gestion des Contrats**
-- Upload de fichiers PDF et Word (.pdf, .doc, .docx)
-- Stockage sécurisé dans Supabase Storage
-- Affichage de tous les contrats de l'utilisateur
-- Téléchargement des contrats
-- Suppression des contrats
-- Recherche et filtrage
-- Gestion des dates d'expiration
+1. [Configuration de la base de données](#configuration-de-la-base-de-données)
+2. [Réinitialisation des données](#réinitialisation-des-données)
+3. [Configuration des notifications email](#configuration-des-notifications-email)
+4. [Changement de devise en FCFA](#changement-de-devise-en-fcfa)
+5. [Modification des biens](#modification-des-biens)
 
-✅ **Interface Professionnelle**
-- Design moderne et responsive
-- Animations fluides
-- Navigation intuitive
-- Gestion d'erreurs avec toasts
+## 🗄️ Configuration de la base de données
 
-## 📋 Prérequis
+### Étape 1 : Exécuter le schéma principal
 
-- Node.js (version 18 ou supérieure)
-- npm ou yarn
-- Un compte Supabase (gratuit)
+1. Connectez-vous à votre projet Supabase
+2. Allez dans **SQL Editor**
+3. Exécutez le fichier `supabase-schema.sql` (si pas déjà fait)
+4. Exécutez le fichier `supabase-properties-schema.sql` pour créer les tables :
+   - `properties` (biens immobiliers)
+   - `tenants` (locataires)
+   - `payments` (paiements)
+   - `payment_notifications` (notifications de paiement)
 
-## 🔧 Installation
+### Étape 2 : Vérifier les tables
 
-1. **Installer les dépendances**
-   ```bash
-   npm install
-   ```
-
-2. **Configurer Supabase**
-   - Suivez le guide détaillé dans `SUPABASE_SETUP.md`
-   - Créez un projet Supabase
-   - Exécutez le script SQL (`supabase-schema.sql`)
-   - Créez le bucket de stockage `contracts`
-
-3. **Configurer les variables d'environnement**
-   - Créez un fichier `.env` à la racine du projet
-   - Ajoutez vos clés Supabase :
-     ```env
-     VITE_SUPABASE_URL=https://votre-projet.supabase.co
-     VITE_SUPABASE_ANON_KEY=votre_cle_anon_ici
-     ```
-
-4. **Lancer l'application**
-   ```bash
-   npm run dev
-   ```
-
-   L'application sera accessible sur `http://localhost:8080`
-
-## 📁 Structure du Projet
-
-```
-property-pal-main/
-├── src/
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── AppSidebar.tsx      # Sidebar avec navigation
-│   │   │   └── DashboardLayout.tsx # Layout principal
-│   │   ├── ProtectedRoute.tsx      # Protection des routes
-│   │   └── ui/                      # Composants UI (shadcn)
-│   ├── contexts/
-│   │   └── AuthContext.tsx          # Contexte d'authentification
-│   ├── lib/
-│   │   ├── supabase.ts              # Client Supabase
-│   │   └── utils.ts                 # Utilitaires
-│   ├── pages/
-│   │   ├── Auth.tsx                 # Page d'authentification
-│   │   ├── Contracts.tsx            # Page de gestion des contrats
-│   │   ├── Dashboard.tsx            # Tableau de bord
-│   │   └── ...
-│   └── App.tsx                      # Composant principal
-├── supabase-schema.sql              # Schéma de base de données
-└── SUPABASE_SETUP.md                # Guide de configuration Supabase
+Vérifiez que les tables ont été créées :
+```sql
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('properties', 'tenants', 'payments', 'payment_notifications');
 ```
 
-## 🗄️ Base de Données
+## 🔄 Réinitialisation des données
 
-### Tables Créées
+Pour remettre toutes les données à zéro (sauf les comptes utilisateurs) :
 
-1. **profiles** - Profils utilisateurs
-   - Extension de `auth.users`
-   - Stocke le nom complet et l'email
+1. Allez dans **SQL Editor** de Supabase
+2. Exécutez le fichier `supabase-reset-data.sql`
 
-2. **contracts** - Contrats de location
-   - Lié à l'utilisateur via `user_id`
-   - Stocke les métadonnées des fichiers
-   - Gère les dates d'expiration
+⚠️ **Attention** : Cela supprimera toutes les propriétés, locataires, paiements et contrats, mais conservera les comptes utilisateurs.
 
-### Storage
+## 📧 Configuration des notifications email
 
-- **Bucket `contracts`** - Stockage des fichiers PDF/Word
-  - Structure : `{user_id}/{timestamp}.{extension}`
-  - Politiques RLS activées
-  - Limite de taille : 10MB (configurable)
+### Étape 1 : Créer les fonctions SQL
 
-## 🔐 Sécurité
+1. Allez dans **SQL Editor** de Supabase
+2. Exécutez le fichier `supabase-email-notifications.sql`
 
-- **Row Level Security (RLS)** activé sur toutes les tables
-- Les utilisateurs ne peuvent accéder qu'à leurs propres données
-- Les fichiers sont stockés de manière sécurisée
-- Authentification gérée par Supabase Auth
+### Étape 2 : Configurer l'envoi d'emails
 
-## 📝 Utilisation
+#### Option A : Utiliser Supabase Email (recommandé)
 
-### Inscription
-1. Allez sur `/auth`
-2. Cliquez sur "Inscription"
-3. Remplissez le formulaire (nom, email, mot de passe)
-4. Confirmez votre email (si requis par Supabase)
+1. Allez dans **Settings > Auth > SMTP Settings** dans Supabase
+2. Configurez votre serveur SMTP (Gmail, SendGrid, etc.)
+3. Activez l'envoi d'emails
 
-### Ajouter un Contrat
-1. Connectez-vous
-2. Allez dans "Contrats" dans la sidebar
-3. Cliquez sur "Ajouter un contrat"
-4. Remplissez les informations :
-   - Titre du contrat
-   - Nom du locataire
-   - Nom de la propriété
-   - Date d'expiration (optionnel)
-   - Fichier (PDF ou Word)
-5. Cliquez sur "Enregistrer"
+#### Option B : Utiliser une Edge Function
 
-### Gérer les Contrats
-- **Rechercher** : Utilisez la barre de recherche
-- **Télécharger** : Cliquez sur "Télécharger" sur une carte de contrat
-- **Supprimer** : Cliquez sur l'icône poubelle
+1. Installez Supabase CLI :
+   ```bash
+   npm install -g supabase
+   ```
 
-## 🐛 Dépannage
+2. Connectez-vous :
+   ```bash
+   supabase login
+   ```
 
-### Erreur : "Les variables d'environnement Supabase ne sont pas configurées"
-- Vérifiez que le fichier `.env` existe
-- Vérifiez que les variables commencent par `VITE_`
-- Redémarrez le serveur de développement
+3. Liez votre projet :
+   ```bash
+   supabase link --project-ref votre-project-ref
+   ```
 
-### Erreur lors de l'upload
-- Vérifiez que le bucket `contracts` existe
-- Vérifiez que le fichier ne dépasse pas 10MB
-- Vérifiez que le type de fichier est autorisé (PDF/Word)
+4. Déployez la fonction :
+   ```bash
+   supabase functions deploy send-payment-reminders
+   ```
 
-### Erreur d'authentification
-- Vérifiez les Redirect URLs dans Supabase
-- Vérifiez votre email de confirmation
-- Vérifiez que les politiques RLS sont activées
+5. Configurez un cron job (pg_cron) ou utilisez un service externe (Vercel Cron, etc.) pour appeler cette fonction quotidiennement
 
-## 📚 Ressources
+### Étape 3 : Tester les notifications
 
-- [Documentation Supabase](https://supabase.com/docs)
-- [Documentation React Router](https://reactrouter.com/)
-- [Documentation shadcn/ui](https://ui.shadcn.com/)
+Pour tester manuellement, exécutez dans SQL Editor :
+```sql
+-- Créer les notifications
+SELECT public.check_and_create_payment_notifications();
 
-## 🎨 Améliorations Futures
+-- Voir les notifications en attente
+SELECT * FROM public.pending_notifications;
+```
 
-- [ ] Prévisualisation des contrats
-- [ ] Édition des métadonnées
-- [ ] Export en masse
-- [ ] Notifications d'expiration
-- [ ] Signature électronique
-- [ ] Versioning des contrats
+## 💰 Changement de devise en FCFA
 
-## 📄 Licence
+La devise a été changée en FCFA dans toute l'application. Les montants sont maintenant affichés avec le format :
+- `1 500 000 FCFA` au lieu de `1 500€`
 
-Ce projet est sous licence MIT.
+Les fichiers modifiés :
+- `src/lib/currency.ts` - Utilitaires de formatage
+- `src/components/dashboard/PropertyCard.tsx`
+- `src/components/dashboard/RevenueChart.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/pages/Payments.tsx`
 
+## ✏️ Modification des biens
 
+### Ajouter un bien
+
+1. Allez sur la page **Propriétés**
+2. Cliquez sur **Ajouter un bien**
+3. Remplissez le formulaire
+4. Cliquez sur **Créer**
+
+### Modifier un bien
+
+1. Allez sur la page **Propriétés**
+2. Cliquez sur le bouton **Modifier** sur la carte du bien
+3. Modifiez les informations
+4. Cliquez sur **Modifier**
+
+Les modifications sont sauvegardées dans Supabase et synchronisées en temps réel.
+
+## 🔧 Dépannage
+
+### Les biens ne s'affichent pas
+
+1. Vérifiez que vous êtes connecté
+2. Vérifiez que les tables existent dans Supabase
+3. Vérifiez la console du navigateur pour les erreurs
+
+### Les notifications ne sont pas envoyées
+
+1. Vérifiez que la fonction `check_and_create_payment_notifications` existe
+2. Vérifiez que les locataires ont un email et un `payment_day` défini
+3. Vérifiez les logs de la Edge Function dans Supabase
+4. Vérifiez la configuration SMTP dans Supabase
+
+### Erreurs de permissions
+
+1. Vérifiez que RLS (Row Level Security) est activé
+2. Vérifiez que les politiques RLS sont correctement configurées
+3. Vérifiez que vous êtes connecté avec un compte valide
+
+## 📝 Notes importantes
+
+- Les montants sont stockés en nombres dans la base de données (pas de symbole)
+- Le formatage FCFA est fait côté client
+- Les notifications sont créées 10 jours avant l'échéance
+- Les paiements sont créés automatiquement pour les locataires actifs
+- Les données sont isolées par utilisateur grâce à RLS
+
+## 🚀 Prochaines étapes
+
+1. Configurez les notifications email
+2. Ajoutez vos premiers biens
+3. Ajoutez vos locataires
+4. Configurez un cron job pour les notifications automatiques

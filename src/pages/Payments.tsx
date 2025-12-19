@@ -12,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFCFA } from "@/lib/currency";
 
 const payments = [
   {
@@ -69,21 +70,21 @@ const payments = [
 const stats = [
   {
     label: "Revenus du mois",
-    value: "15 800€",
+    value: formatFCFA(15800),
     icon: TrendingUp,
     color: "text-success",
     bgColor: "bg-success/10",
   },
   {
     label: "En attente",
-    value: "1 800€",
+    value: formatFCFA(1800),
     icon: Clock,
     color: "text-warning",
     bgColor: "bg-warning/10",
   },
   {
     label: "En retard",
-    value: "850€",
+    value: formatFCFA(850),
     icon: XCircle,
     color: "text-destructive",
     bgColor: "bg-destructive/10",
@@ -186,7 +187,7 @@ export default function Payments() {
                   </td>
                   <td className="p-4">
                     <p className="font-display font-semibold text-foreground">
-                      {payment.amount.toLocaleString()}€
+                      {formatFCFA(payment.amount)}
                     </p>
                   </td>
                   <td className="p-4 hidden md:table-cell text-sm text-muted-foreground">

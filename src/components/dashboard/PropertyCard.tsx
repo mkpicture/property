@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
-import { MapPin, Users, Home } from "lucide-react";
+import { MapPin, Users, Home, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatFCFA } from "@/lib/currency";
+import { Link } from "react-router-dom";
 
 interface PropertyCardProps {
   id: string;
@@ -75,9 +78,18 @@ export function PropertyCard({
           </div>
           {monthlyRent && (
             <p className="font-display font-semibold text-primary">
-              {monthlyRent.toLocaleString()} €/mois
+              {formatFCFA(monthlyRent)}/mois
             </p>
           )}
+        </div>
+        
+        <div className="pt-2">
+          <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link to={`/properties/${id}/edit`}>
+              <Edit className="h-3 w-3 mr-2" />
+              Modifier
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

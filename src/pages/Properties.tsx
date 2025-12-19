@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PropertyCard } from "@/components/dashboard/PropertyCard";
 import { Button } from "@/components/ui/button";
@@ -13,68 +13,93 @@ import {
 import { Plus, Search, Building2, Grid3X3, List } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
-const properties = [
-  {
-    id: "1",
-    name: "Résidence Les Jardins",
-    type: "Immeuble · 8 unités",
-    address: "12 rue des Fleurs, 75001 Paris",
-    status: "loué" as const,
-    tenants: 8,
-    monthlyRent: 6400,
-  },
-  {
-    id: "2",
-    name: "Appartement Haussmann",
-    type: "Appartement · T4",
-    address: "45 avenue Victor Hugo, 75016 Paris",
-    status: "loué" as const,
-    tenants: 1,
-    monthlyRent: 2200,
-  },
-  {
-    id: "3",
-    name: "Studio Saint-Michel",
-    type: "Studio · 25m²",
-    address: "8 rue de la Harpe, 75005 Paris",
-    status: "vacant" as const,
-    tenants: 0,
-    monthlyRent: 850,
-  },
-  {
-    id: "4",
-    name: "Maison de Ville",
-    type: "Maison · 5 pièces",
-    address: "23 allée des Roses, 92100 Boulogne",
-    status: "loué" as const,
-    tenants: 1,
-    monthlyRent: 3200,
-  },
-  {
-    id: "5",
-    name: "Loft Bastille",
-    type: "Loft · 80m²",
-    address: "15 rue de Lappe, 75011 Paris",
-    status: "loué" as const,
-    tenants: 2,
-    monthlyRent: 1800,
-  },
-  {
-    id: "6",
-    name: "Duplex Montmartre",
-    type: "Duplex · T3",
-    address: "28 rue Lepic, 75018 Paris",
-    status: "vacant" as const,
-    tenants: 0,
-    monthlyRent: 1650,
-  },
-];
+interface Property {
+  id: string;
+  name: string;
+  type: string;
+  address: string;
+  status: "loué" | "vacant";
+  monthly_rent: number;
+  image_url?: string;
+}
 
 export default function Properties() {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadProperties();
+    }
+  }, [user]);
+
+  const loadProperties = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setProperties(data || []);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des propriétés:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Compter les locataires pour chaque propriété
+  const [tenantCounts, setTenantCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (user && properties.length > 0) {
+      loadTenantCounts();
+    }
+  }, [user, properties]);
+
+  const loadTenantCounts = async () => {
+    if (!user) return;
+    
+    try {
+      const propertyIds = properties.map(p => p.id);
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("property_id")
+        .eq("user_id", user.id)
+        .in("property_id", propertyIds)
+        .is("move_out_date", null);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      propertyIds.forEach(id => {
+        counts[id] = 0;
+      });
+      
+      data?.forEach(tenant => {
+        if (tenant.property_id) {
+          counts[tenant.property_id] = (counts[tenant.property_id] || 0) + 1;
+        }
+      });
+
+      setTenantCounts(counts);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des locataires:", error);
+    }
+  };
 
   const filteredProperties = properties.filter((property) => {
     const matchesSearch =
@@ -201,7 +226,18 @@ export default function Properties() {
           )}
         >
           {filteredProperties.map((property, index) => (
-            <PropertyCard key={property.id} {...property} delay={index * 50} />
+            <PropertyCard
+              key={property.id}
+              id={property.id}
+              name={property.name}
+              type={property.type}
+              address={property.address}
+              status={property.status}
+              tenants={tenantCounts[property.id] || 0}
+              monthlyRent={property.monthly_rent}
+              imageUrl={property.image_url}
+              delay={index * 50}
+            />
           ))}
         </div>
       )}
