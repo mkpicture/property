@@ -57,18 +57,20 @@ export default function PropertyForm() {
   const isEditing = !!id;
 
   useEffect(() => {
-    if (isEditing && user) {
+    if (isEditing && user && id) {
       loadProperty();
     }
-  }, [id, user]);
+  }, [id, user, isEditing]);
 
   const loadProperty = async () => {
+    if (!id || !user) return;
+    
     try {
       const { data, error } = await supabase
         .from("properties")
         .select("*")
         .eq("id", id)
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .single();
 
       if (error) throw error;
@@ -170,7 +172,7 @@ export default function PropertyForm() {
       };
 
       let error;
-      if (isEditing) {
+      if (isEditing && id) {
         const { error: updateError } = await supabase
           .from("properties")
           .update(propertyData)

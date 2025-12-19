@@ -190,7 +190,7 @@ export default function TenantForm() {
       };
 
       let error;
-      if (isEditing) {
+      if (isEditing && id) {
         const { error: updateError } = await supabase
           .from("tenants")
           .update(tenantData)
