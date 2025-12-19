@@ -2,11 +2,21 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Valeurs par défaut (votre configuration Supabase)
 const DEFAULT_SUPABASE_URL = 'https://vufrsgvhkeinifqmouei.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1ZnJzZ3Zoa2VpbmlmcW1vdWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNjYxNjAsImV4cCI6MjA4MTY0MjE2MH0.FfMGMxxOXrlAildbcMdtpEod9OX_TKj9nkqW6M5srLQ';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_La-A2g5jGsUWXQrQiqlXGw_aVGdK8Ve';
 
-// Récupérer les variables d'environnement ou utiliser les valeurs par défaut
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || DEFAULT_SUPABASE_URL;
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string)?.trim() || DEFAULT_SUPABASE_ANON_KEY;
+// Récupérer les variables d'environnement (support VITE_ et NEXT_PUBLIC_ pour compatibilité)
+const supabaseUrl = (
+  (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || 
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string)?.trim() || 
+  DEFAULT_SUPABASE_URL
+);
+
+const supabaseAnonKey = (
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string)?.trim() || 
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string)?.trim() ||
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string)?.trim() ||
+  DEFAULT_SUPABASE_ANON_KEY
+);
 
 // Vérifier que les valeurs sont valides
 const isConfigured = supabaseUrl && supabaseAnonKey && 
