@@ -18,6 +18,7 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({
+  id,
   name,
   type,
   address,
