@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PropertyCard } from "@/components/dashboard/PropertyCard";
@@ -7,6 +8,8 @@ import { Building2, Users, CreditCard, AlertTriangle, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { formatFCFA } from "@/lib/currency";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Demo data
 const stats = [
@@ -44,7 +47,7 @@ const stats = [
   },
 ];
 
-const properties = [
+const demoProperties = [
   {
     id: "1",
     name: "Résidence Les Jardins",
@@ -108,6 +111,74 @@ const alerts = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [properties, setProperties] = useState<Array<{
+    id: string;
+    name: string;
+    type: string;
+    address: string;
+    status: "loué" | "vacant";
+    monthly_rent: number;
+    image_url?: string;
+  }>>([]);
+  
+  // Données de démo pour affichage si aucune propriété réelle
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadProperties();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const loadProperties = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(4);
+
+      if (error) throw error;
+
+      setProperties(data || []);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des propriétés:", error);
+      // En cas d'erreur, utiliser les données de démo
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Utiliser les données réelles si disponibles, sinon les données de démo
+  const displayProperties = properties.length > 0 
+    ? properties.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        address: p.address,
+        status: p.status,
+        tenants: 0, // TODO: Calculer le nombre de locataires
+        monthlyRent: p.monthly_rent,
+        imageUrl: p.image_url,
+      }))
+    : demoProperties.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        address: p.address,
+        status: p.status,
+        tenants: p.tenants,
+        monthlyRent: p.monthlyRent,
+      }));
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -152,9 +223,26 @@ export default function Dashboard() {
           </Button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {properties.map((property, index) => (
-            <PropertyCard key={property.id} {...property} delay={index * 100} />
-          ))}
+          {loading ? (
+            <div className="col-span-4 flex items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : displayProperties.length > 0 ? (
+            displayProperties.map((property, index) => (
+              <PropertyCard key={property.id} {...property} delay={index * 100} />
+            ))
+          ) : (
+            <div className="col-span-4 text-center py-8">
+              <Building2 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-sm text-muted-foreground">Aucune propriété pour le moment</p>
+              <Button variant="gradient" className="mt-4" asChild>
+                <Link to="/properties/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter votre première propriété
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
