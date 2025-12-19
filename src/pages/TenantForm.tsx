@@ -58,11 +58,11 @@ export default function TenantForm() {
   useEffect(() => {
     if (user) {
       loadProperties();
-      if (isEditing) {
+      if (isEditing && id) {
         loadTenant();
       }
     }
-  }, [id, user]);
+  }, [id, user, isEditing]);
 
   const loadProperties = async () => {
     if (!user) return;
