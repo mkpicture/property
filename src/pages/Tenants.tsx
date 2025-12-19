@@ -40,59 +40,6 @@ interface Tenant {
   move_out_date: string | null;
 }
 
-const tenants = [
-  {
-    id: "1",
-    name: "Jean Dupont",
-    email: "jean.dupont@email.com",
-    phone: "+33 6 12 34 56 78",
-    property: "Appartement Haussmann",
-    status: "actif",
-    rentStatus: "payé",
-    moveInDate: "15 Jan 2023",
-  },
-  {
-    id: "2",
-    name: "Marie Martin",
-    email: "marie.martin@email.com",
-    phone: "+33 6 98 76 54 32",
-    property: "Résidence Les Jardins - Apt 3",
-    status: "actif",
-    rentStatus: "en retard",
-    moveInDate: "1 Mar 2022",
-  },
-  {
-    id: "3",
-    name: "Pierre Bernard",
-    email: "pierre.bernard@email.com",
-    phone: "+33 6 55 44 33 22",
-    property: "Résidence Les Jardins - Apt 1",
-    status: "actif",
-    rentStatus: "payé",
-    moveInDate: "10 Sep 2023",
-  },
-  {
-    id: "4",
-    name: "Sophie Laurent",
-    email: "sophie.laurent@email.com",
-    phone: "+33 6 11 22 33 44",
-    property: "Maison de Ville",
-    status: "actif",
-    rentStatus: "payé",
-    moveInDate: "1 Jun 2021",
-  },
-  {
-    id: "5",
-    name: "Thomas Petit",
-    email: "thomas.petit@email.com",
-    phone: "+33 6 77 88 99 00",
-    property: "Loft Bastille",
-    status: "actif",
-    rentStatus: "en retard",
-    moveInDate: "15 Nov 2023",
-  },
-];
-
 export default function Tenants() {
   const { user } = useAuth();
   const navigate = useNavigate();

@@ -56,6 +56,8 @@ export default function Properties() {
       setProperties(data || []);
     } catch (error: any) {
       console.error("Erreur lors du chargement des propriétés:", error);
+      // En cas d'erreur, on garde un tableau vide pour éviter les crashes
+      setProperties([]);
     } finally {
       setLoading(false);
     }
@@ -206,15 +208,30 @@ export default function Properties() {
       </div>
 
       {/* Properties Grid */}
-      {filteredProperties.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-4" />
+          <p className="text-sm text-muted-foreground">Chargement des propriétés...</p>
+        </div>
+      ) : filteredProperties.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="font-display font-semibold text-foreground">
-            Aucune propriété trouvée
+            {properties.length === 0 ? "Aucune propriété" : "Aucune propriété trouvée"}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Essayez de modifier vos filtres ou ajoutez un nouveau bien.
+            {properties.length === 0
+              ? "Commencez par ajouter votre premier bien immobilier."
+              : "Essayez de modifier vos filtres ou ajoutez un nouveau bien."}
           </p>
+          {properties.length === 0 && (
+            <Button variant="gradient" className="mt-4" asChild>
+              <Link to="/properties/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un bien
+              </Link>
+            </Button>
+          )}
         </div>
       ) : (
         <div
