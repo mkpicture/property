@@ -25,7 +25,7 @@ export default function Auth() {
   // Rediriger si l'utilisateur est déjà connecté
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -114,8 +114,17 @@ export default function Auth() {
             title: "Connexion réussie",
             description: "Vous allez être redirigé vers le tableau de bord.",
           });
-          // La redirection se fera automatiquement via le useEffect qui surveille user
-          navigate("/dashboard");
+          // Attendre un peu pour que la session soit mise à jour
+          setTimeout(() => {
+            navigate("/dashboard", { replace: true });
+          }, 100);
+        } else {
+          // Si pas de session mais pas d'erreur, attendre un peu
+          setTimeout(() => {
+            if (user) {
+              navigate("/dashboard", { replace: true });
+            }
+          }, 500);
         }
       } else {
         const { error, data } = await signUp(formData.email, formData.password, formData.name);
@@ -158,20 +167,32 @@ export default function Auth() {
           // Vérifier si l'email nécessite une confirmation
           const needsConfirmation = data?.user && !data.session;
           
-          toast({
-            title: "Compte créé avec succès",
-            description: needsConfirmation
-              ? "Un email de confirmation a été envoyé. Vérifiez votre boîte de réception."
-              : "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
-          });
-          
-          // Réinitialiser le formulaire et passer en mode connexion
-          setFormData({
-            email: formData.email, // Garder l'email pour faciliter la connexion
-            password: "",
-            name: "",
-          });
-          setIsLogin(true);
+          // Si une session est créée directement (email confirmation désactivée)
+          if (data?.session) {
+            toast({
+              title: "Compte créé avec succès",
+              description: "Vous allez être redirigé vers le tableau de bord.",
+            });
+            // Attendre que la session soit mise à jour
+            setTimeout(() => {
+              navigate("/dashboard", { replace: true });
+            }, 300);
+          } else {
+            toast({
+              title: "Compte créé avec succès",
+              description: needsConfirmation
+                ? "Un email de confirmation a été envoyé. Vérifiez votre boîte de réception."
+                : "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
+            });
+            
+            // Réinitialiser le formulaire et passer en mode connexion
+            setFormData({
+              email: formData.email, // Garder l'email pour faciliter la connexion
+              password: "",
+              name: "",
+            });
+            setIsLogin(true);
+          }
         }
       }
     } catch (error: any) {

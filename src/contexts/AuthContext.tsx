@@ -207,6 +207,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Vérifier que Supabase est configuré
+      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || '';
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        return {
+          error: {
+            message: 'Supabase n\'est pas configuré. Vérifiez vos variables d\'environnement.',
+            code: 'CONFIG_ERROR'
+          }
+        };
+      }
+
       if (!email || !password) {
         return { 
           error: { 
@@ -215,16 +226,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      let data, error;
+      
+      try {
+        const result = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+        
+        data = result.data;
+        error = result.error;
+      } catch (networkError: any) {
+        console.error('Erreur réseau lors de la connexion:', networkError);
+        
+        if (networkError.message?.includes('fetch') || networkError.message?.includes('network')) {
+          return {
+            error: {
+              message: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.',
+              code: 'NETWORK_ERROR',
+              details: networkError.message
+            }
+          };
+        }
+        
+        if (networkError.message?.includes('CORS')) {
+          return {
+            error: {
+              message: 'Erreur CORS. Vérifiez la configuration de votre projet Supabase (Site URL et Redirect URLs).',
+              code: 'CORS_ERROR'
+            }
+          };
+        }
+        
+        return {
+          error: {
+            message: networkError.message || 'Erreur de connexion au serveur',
+            code: 'CONNECTION_ERROR',
+            details: networkError.message
+          }
+        };
+      }
 
-      return { error, data };
+      if (error) {
+        let errorMessage = error.message || 'Une erreur est survenue lors de la connexion';
+        
+        if (error.message?.includes('fetch')) {
+          errorMessage = 'Impossible de se connecter au serveur Supabase. Vérifiez votre connexion et que l\'URL est correcte.';
+        } else if (error.message?.includes('Invalid login credentials')) {
+          errorMessage = 'Email ou mot de passe incorrect.';
+        } else if (error.message?.includes('Email not confirmed')) {
+          errorMessage = 'Veuillez confirmer votre email avant de vous connecter.';
+        }
+        
+        return {
+          error: {
+            ...error,
+            message: errorMessage
+          }
+        };
+      }
+
+      return { error: null, data };
     } catch (err: any) {
+      console.error('Erreur inattendue lors de la connexion:', err);
+      
+      if (err.message?.includes('fetch') || err.name === 'TypeError' || err.message?.includes('network')) {
+        return {
+          error: {
+            message: 'Erreur de connexion. Vérifiez votre connexion internet et que Supabase est accessible.',
+            code: 'NETWORK_ERROR',
+            details: err.message
+          }
+        };
+      }
+      
       return { 
         error: { 
-          message: err.message || 'Une erreur est survenue lors de la connexion' 
+          message: err.message || 'Une erreur inattendue est survenue lors de la connexion',
+          code: 'UNKNOWN_ERROR',
+          details: err.message
         } 
       };
     }
