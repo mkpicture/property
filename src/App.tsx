@@ -15,6 +15,8 @@ import Tenants from "./pages/Tenants";
 import TenantForm from "./pages/TenantForm";
 import Payments from "./pages/Payments";
 import Contracts from "./pages/Contracts";
+import Expenses from "./pages/Expenses";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -106,6 +108,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Contracts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <Expenses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
