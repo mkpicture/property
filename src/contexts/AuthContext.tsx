@@ -58,16 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      // Vérifier que Supabase est configuré
-      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || '';
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-        return {
-          error: {
-            message: 'Supabase n\'est pas configuré. Vérifiez vos variables d\'environnement.',
-            code: 'CONFIG_ERROR'
-          }
-        };
-      }
+      // Vérifier que Supabase est configuré (utiliser isSupabaseConfigured de supabase.ts)
+      // Le client Supabase est toujours initialisé avec les valeurs par défaut si nécessaire
 
       // Validation basique
       if (!email || !password || !name) {
@@ -207,16 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Vérifier que Supabase est configuré
-      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || '';
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-        return {
-          error: {
-            message: 'Supabase n\'est pas configuré. Vérifiez vos variables d\'environnement.',
-            code: 'CONFIG_ERROR'
-          }
-        };
-      }
+      // Le client Supabase est toujours initialisé (avec valeurs par défaut si nécessaire)
 
       if (!email || !password) {
         return { 

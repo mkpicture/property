@@ -1,70 +1,56 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || '';
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string)?.trim() || '';
+// Valeurs par défaut (votre configuration Supabase)
+const DEFAULT_SUPABASE_URL = 'https://vufrsgvhkeinifqmouei.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1ZnJzZ3Zoa2VpbmlmcW1vdWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNjYxNjAsImV4cCI6MjA4MTY0MjE2MH0.FfMGMxxOXrlAildbcMdtpEod9OX_TKj9nkqW6M5srLQ';
 
-// Vérifier que les variables sont configurées
+// Récupérer les variables d'environnement ou utiliser les valeurs par défaut
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string)?.trim() || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string)?.trim() || DEFAULT_SUPABASE_ANON_KEY;
+
+// Vérifier que les valeurs sont valides
 const isConfigured = supabaseUrl && supabaseAnonKey && 
   supabaseUrl !== '' && 
   supabaseAnonKey !== '' &&
   supabaseUrl.startsWith('http') &&
-  !supabaseUrl.includes('placeholder');
+  !supabaseUrl.includes('placeholder') &&
+  supabaseAnonKey.length > 50; // Les clés Supabase sont longues
 
 // Créer le client Supabase
 let supabase: SupabaseClient;
 
-if (isConfigured) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-      global: {
-        headers: {
-          'x-client-info': 'immogest-web',
-        },
-      },
-    });
-    
-    // Tester la connexion
-    if (import.meta.env.DEV) {
-      console.log('✅ Supabase client initialisé avec succès');
-      console.log('📍 URL:', supabaseUrl);
-    }
-  } catch (error) {
-    console.error('❌ Erreur lors de l\'initialisation de Supabase:', error);
-    // Créer un client de fallback pour éviter les crashes
-    supabase = createClient('https://placeholder.supabase.co', 'placeholder-key', {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-  }
-} else {
-  // Client placeholder si non configuré
-  supabase = createClient('https://placeholder.supabase.co', 'placeholder-key', {
+try {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+    global: {
+      headers: {
+        'x-client-info': 'immogest-web',
+      },
     },
   });
   
-  // Avertir l'utilisateur
-  const errorMessage = !supabaseUrl || !supabaseAnonKey
-    ? 'Les variables d\'environnement Supabase (VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY) ne sont pas configurées.'
-    : 'Les variables d\'environnement Supabase semblent invalides.';
-  
-  console.error('❌', errorMessage);
-  console.error('📝 Vérifiez votre fichier .env ou les variables d\'environnement de votre plateforme de déploiement.');
-  
+  // Log de confirmation
   if (import.meta.env.DEV) {
-    console.error('💡 Créez un fichier .env à la racine du projet avec :');
-    console.error('   VITE_SUPABASE_URL=https://votre-projet.supabase.co');
-    console.error('   VITE_SUPABASE_ANON_KEY=votre_cle_anon');
+    const usingEnv = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+    console.log('✅ Supabase client initialisé avec succès');
+    console.log('📍 URL:', supabaseUrl);
+    console.log('🔑 Source:', usingEnv ? 'Variables d\'environnement' : 'Valeurs par défaut');
   }
+} catch (error) {
+  console.error('❌ Erreur lors de l\'initialisation de Supabase:', error);
+  // Créer un client de fallback pour éviter les crashes
+  supabase = createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+  console.warn('⚠️ Utilisation du client de fallback');
 }
 
 export { supabase };
