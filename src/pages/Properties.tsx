@@ -80,10 +80,17 @@ export default function Properties() {
   }, [user, properties]);
 
   const loadTenantCounts = async () => {
-    if (!user) return;
+    if (!user || properties.length === 0) {
+      setTenantCounts({});
+      return;
+    }
     
     try {
       const propertyIds = properties.map(p => p.id);
+      if (propertyIds.length === 0) {
+        setTenantCounts({});
+        return;
+      }
       const { data, error } = await supabase
         .from("tenants")
         .select("property_id")
@@ -91,7 +98,11 @@ export default function Properties() {
         .in("property_id", propertyIds)
         .is("move_out_date", null);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase lors du chargement des compteurs:", error);
+        setTenantCounts({});
+        return;
+      }
 
       const counts: Record<string, number> = {};
       propertyIds.forEach(id => {
@@ -106,7 +117,9 @@ export default function Properties() {
 
       setTenantCounts(counts);
     } catch (error: any) {
-      console.error("Erreur lors du chargement des locataires:", error);
+      console.error("Erreur inattendue lors du chargement des compteurs de locataires:", error);
+      // En cas d'erreur, on garde un objet vide
+      setTenantCounts({});
     }
   };
 
