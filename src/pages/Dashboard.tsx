@@ -134,7 +134,10 @@ export default function Dashboard() {
   }, [user]);
 
   const loadProperties = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -145,12 +148,17 @@ export default function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(4);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase lors du chargement des propriétés:", error);
+        // En cas d'erreur, utiliser un tableau vide (les données de démo seront utilisées)
+        setProperties([]);
+        return;
+      }
 
       setProperties(data || []);
     } catch (error: any) {
-      console.error("Erreur lors du chargement des propriétés:", error);
-      // En cas d'erreur, utiliser les données de démo
+      console.error("Erreur inattendue lors du chargement des propriétés:", error);
+      // En cas d'erreur, utiliser un tableau vide (les données de démo seront utilisées)
       setProperties([]);
     } finally {
       setLoading(false);

@@ -95,6 +95,7 @@ export default function Auth() {
     try {
       if (isLogin) {
         const { error, data } = await signIn(formData.email, formData.password);
+        
         if (error) {
           let errorMessage = "Une erreur est survenue lors de la connexion.";
           
@@ -112,16 +113,27 @@ export default function Auth() {
             title: "Erreur de connexion",
             description: errorMessage,
             variant: "destructive",
+            duration: 5000,
           });
-        } else if (data?.session) {
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data?.session) {
           toast({
             title: "Connexion réussie",
             description: "Vous allez être redirigé vers le tableau de bord.",
+            duration: 3000,
           });
           // Attendre que l'état soit mis à jour via onAuthStateChange
           // Puis rediriger
           setTimeout(() => {
-            navigate("/dashboard", { replace: true });
+            try {
+              navigate("/dashboard", { replace: true });
+            } catch (navError) {
+              console.error("Erreur de navigation:", navError);
+              window.location.href = "/dashboard";
+            }
           }, 500);
         } else {
           // Si pas de session mais pas d'erreur, c'est peut-être que l'email nécessite confirmation
@@ -129,10 +141,13 @@ export default function Auth() {
             title: "Connexion en attente",
             description: "Vérifiez votre email pour confirmer votre compte.",
             variant: "default",
+            duration: 5000,
           });
+          setIsLoading(false);
         }
       } else {
         const { error, data } = await signUp(formData.email, formData.password, formData.name);
+        
         if (error) {
           let errorMessage = "Une erreur est survenue lors de l'inscription.";
           let errorTitle = "Erreur d'inscription";
@@ -177,10 +192,16 @@ export default function Auth() {
             toast({
               title: "Compte créé avec succès",
               description: "Vous allez être redirigé vers le tableau de bord.",
+              duration: 3000,
             });
             // Attendre que la session soit mise à jour
             setTimeout(() => {
-              navigate("/dashboard", { replace: true });
+              try {
+                navigate("/dashboard", { replace: true });
+              } catch (navError) {
+                console.error("Erreur de navigation:", navError);
+                window.location.href = "/dashboard";
+              }
             }, 300);
           } else {
             toast({
@@ -201,10 +222,12 @@ export default function Auth() {
         }
       }
     } catch (error: any) {
+      console.error("Erreur inattendue dans handleSubmit:", error);
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur inattendue est survenue.",
+        description: error?.message || "Une erreur inattendue est survenue. Veuillez réessayer.",
         variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);

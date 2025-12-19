@@ -55,7 +55,10 @@ export default function Tenants() {
   }, [user]);
 
   const loadTenants = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -70,7 +73,17 @@ export default function Tenants() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase lors du chargement des locataires:", error);
+        setTenants([]);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les locataires. Vérifiez votre connexion.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
 
       const formattedTenants = (data || []).map((tenant: any) => ({
         ...tenant,
@@ -79,11 +92,13 @@ export default function Tenants() {
 
       setTenants(formattedTenants);
     } catch (error: any) {
-      console.error("Erreur lors du chargement des locataires:", error);
+      console.error("Erreur inattendue lors du chargement des locataires:", error);
+      setTenants([]);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les locataires.",
+        description: "Une erreur inattendue est survenue lors du chargement des locataires.",
         variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setLoading(false);

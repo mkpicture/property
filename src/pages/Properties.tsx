@@ -41,7 +41,10 @@ export default function Properties() {
   }, [user]);
 
   const loadProperties = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -51,11 +54,15 @@ export default function Properties() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase lors du chargement des propriétés:", error);
+        setProperties([]);
+        return;
+      }
 
       setProperties(data || []);
     } catch (error: any) {
-      console.error("Erreur lors du chargement des propriétés:", error);
+      console.error("Erreur inattendue lors du chargement des propriétés:", error);
       // En cas d'erreur, on garde un tableau vide pour éviter les crashes
       setProperties([]);
     } finally {
