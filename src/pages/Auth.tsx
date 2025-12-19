@@ -118,11 +118,11 @@ export default function Auth() {
             title: "Connexion réussie",
             description: "Vous allez être redirigé vers le tableau de bord.",
           });
-          // La redirection se fera automatiquement via le useEffect qui surveille user
-          // Attendre un peu pour que l'état soit mis à jour
+          // Attendre que l'état soit mis à jour via onAuthStateChange
+          // Puis rediriger
           setTimeout(() => {
             navigate("/dashboard", { replace: true });
-          }, 200);
+          }, 500);
         } else {
           // Si pas de session mais pas d'erreur, c'est peut-être que l'email nécessite confirmation
           toast({
