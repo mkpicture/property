@@ -35,7 +35,7 @@ interface PropertyFormData {
 
 export default function PropertyForm() {
   const params = useParams<{ id?: string }>();
-  const id = params.id;
+  const id: string | undefined = params?.id;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -55,7 +55,7 @@ export default function PropertyForm() {
     image_url: "",
   });
 
-  const isEditing = Boolean(id);
+  const isEditing = Boolean(id && id.trim() !== "");
 
   useEffect(() => {
     if (isEditing && user && id) {
@@ -174,7 +174,7 @@ export default function PropertyForm() {
       };
 
       let error;
-      if (isEditing && id) {
+      if (isEditing && id && id.trim() !== "") {
         const { error: updateError } = await supabase
           .from("properties")
           .update(propertyData)

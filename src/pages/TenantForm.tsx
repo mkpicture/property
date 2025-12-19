@@ -34,7 +34,7 @@ interface TenantFormData {
 
 export default function TenantForm() {
   const params = useParams<{ id?: string }>();
-  const id = params.id;
+  const id: string | undefined = params?.id;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,7 +54,7 @@ export default function TenantForm() {
     notes: "",
   });
 
-  const isEditing = Boolean(id);
+  const isEditing = Boolean(id && id.trim() !== "");
 
   useEffect(() => {
     if (user) {
@@ -192,7 +192,7 @@ export default function TenantForm() {
       };
 
       let error;
-      if (isEditing && id) {
+      if (isEditing && id && id.trim() !== "") {
         const { error: updateError } = await supabase
           .from("tenants")
           .update(tenantData)
