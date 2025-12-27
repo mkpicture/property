@@ -27,6 +27,7 @@ interface PaymentFormData {
   paid_date: string;
   status: "en attente" | "payé" | "en retard";
   payment_method: string;
+  reference: string;
   notes: string;
 }
 
@@ -48,6 +49,7 @@ export default function PaymentForm() {
     paid_date: "",
     status: "en attente",
     payment_method: "",
+    reference: "",
     notes: "",
   });
 
@@ -125,6 +127,7 @@ export default function PaymentForm() {
           paid_date: data.paid_date ? data.paid_date.split("T")[0] : "",
           status: data.status || "en attente",
           payment_method: data.payment_method || "",
+          reference: data.reference || "",
           notes: data.notes || "",
         });
       }
@@ -186,6 +189,21 @@ export default function PaymentForm() {
 
     setLoading(true);
     try {
+      // Calculer automatiquement le statut si nécessaire
+      let finalStatus = formData.status;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(formData.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+
+      // Si une date de paiement est fournie, le statut doit être "payé"
+      if (formData.paid_date) {
+        finalStatus = "payé";
+      } else if (finalStatus === "en attente" && dueDate < today) {
+        // Si pas de date de paiement et que l'échéance est passée, mettre "en retard"
+        finalStatus = "en retard";
+      }
+
       const paymentData = {
         user_id: user.id,
         tenant_id: formData.tenant_id,
@@ -193,8 +211,9 @@ export default function PaymentForm() {
         amount: parseCurrency(formData.amount),
         due_date: formData.due_date,
         paid_date: formData.paid_date || null,
-        status: formData.status,
+        status: finalStatus,
         payment_method: formData.payment_method || null,
+        reference: formData.reference || null,
         notes: formData.notes || null,
       };
 
@@ -366,10 +385,21 @@ export default function PaymentForm() {
                 id="paid_date"
                 type="date"
                 value={formData.paid_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, paid_date: e.target.value })
-                }
+                onChange={(e) => {
+                  const paidDate = e.target.value;
+                  // Si une date de paiement est saisie, mettre automatiquement le statut à "payé"
+                  setFormData({ 
+                    ...formData, 
+                    paid_date: paidDate,
+                    status: paidDate ? "payé" : formData.status
+                  });
+                }}
               />
+              {formData.paid_date && (
+                <p className="text-xs text-muted-foreground">
+                  Le statut sera automatiquement mis à "Payé"
+                </p>
+              )}
             </div>
 
             {/* Statut */}
@@ -416,6 +446,20 @@ export default function PaymentForm() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Référence de paiement */}
+            <div className="space-y-2">
+              <Label htmlFor="reference">Référence de paiement</Label>
+              <Input
+                id="reference"
+                type="text"
+                value={formData.reference}
+                onChange={(e) =>
+                  setFormData({ ...formData, reference: e.target.value })
+                }
+                placeholder="Numéro de référence (optionnel)"
+              />
+            </div>
           </div>
 
           {/* Notes */}
@@ -455,4 +499,7 @@ export default function PaymentForm() {
     </DashboardLayout>
   );
 }
+
+
+
 

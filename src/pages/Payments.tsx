@@ -1,7 +1,22 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Plus,
   Search,
@@ -10,9 +25,14 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFCFA } from "@/lib/currency";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Payment {
   id: string;
@@ -263,7 +283,7 @@ export default function Payments() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center">
+                  <td colSpan={7} className="p-8 text-center">
                     <div className="flex items-center justify-center">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     </div>
@@ -271,7 +291,7 @@ export default function Payments() {
                 </tr>
               ) : filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center">
+                  <td colSpan={7} className="p-8 text-center">
                     <p className="text-muted-foreground">
                       {searchQuery
                         ? "Aucun paiement trouvé"
@@ -337,9 +357,10 @@ export default function Payments() {
                     </Badge>
                   </td>
                   <td className="p-4 hidden sm:table-cell text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span>{payment.payment_method || "-"}</span>
-                      <div className="flex items-center gap-1 ml-auto">
+                    {payment.payment_method || "-"}
+                  </td>
+                  <td className="p-4 hidden sm:table-cell">
+                    <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
