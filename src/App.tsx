@@ -16,6 +16,7 @@ import PropertyForm from "./pages/PropertyForm";
 import Tenants from "./pages/Tenants";
 import TenantForm from "./pages/TenantForm";
 import Payments from "./pages/Payments";
+import PaymentForm from "./pages/PaymentForm";
 import Contracts from "./pages/Contracts";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";

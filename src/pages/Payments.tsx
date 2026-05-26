@@ -403,7 +403,6 @@ export default function Payments() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </div>
                   </td>
                 </tr>
                 ))
