@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Valeurs par défaut (votre configuration Supabase)
-const DEFAULT_SUPABASE_URL = 'https://vufrsgvhkeinifqmouei.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_La-A2g5jGsUWXQrQiqlXGw_aVGdK8Ve';
+const DEFAULT_SUPABASE_URL = 'https://xppjssczygwxkqgymafs.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwcGpzc2N6eWd3eGtxZ3ltYWZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDY1NDUsImV4cCI6MjA5NTM4MjU0NX0.FGD7gsNSGpAkTY0LWfwNa5mAZni4ZGPFg1EDeSrf2ss';
 
 // Récupérer les variables d'environnement (support VITE_ et NEXT_PUBLIC_ pour compatibilité)
 const supabaseUrl = (
