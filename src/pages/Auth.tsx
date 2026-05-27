@@ -241,10 +241,10 @@ export default function Auth() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
         <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur">
-              <Home className="h-6 w-6" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-0.5 overflow-hidden">
+              <img src="/logo.png" alt="IMMOgest Logo" className="h-full w-full object-contain" />
             </div>
-            <span className="font-display text-2xl font-bold">ImmoGest</span>
+            <span className="font-display text-2xl font-bold">IMMOgest</span>
           </div>
 
           <div className="space-y-6 max-w-md">
@@ -279,11 +279,11 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-slide-up">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-primary">
-              <Home className="h-6 w-6 text-primary-foreground" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-0.5 border shadow-sm overflow-hidden">
+              <img src="/logo.png" alt="IMMOgest Logo" className="h-full w-full object-contain" />
             </div>
             <span className="font-display text-2xl font-bold text-foreground">
-              ImmoGest
+              IMMOgest
             </span>
           </div>
 

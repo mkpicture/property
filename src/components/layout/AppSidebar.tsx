@@ -53,12 +53,12 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary">
-              <Home className="h-5 w-5 text-sidebar-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-0.5 overflow-hidden">
+              <img src="/logo.png" alt="IMMOgest" className="h-full w-full object-contain" />
             </div>
             {!collapsed && (
               <span className="font-display text-lg font-semibold text-sidebar-foreground">
-                ImmoGest
+                IMMOgest
               </span>
             )}
           </Link>
