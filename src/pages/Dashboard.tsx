@@ -10,108 +10,15 @@ import { Link } from "react-router-dom";
 import { formatFCFA } from "@/lib/currency";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Demo data
-const stats = [
-  {
-    title: "Total Propriétés",
-    value: 12,
-    subtitle: "8 loués · 4 vacants",
-    icon: Building2,
-    variant: "primary" as const,
-    trend: { value: 8, isPositive: true },
-  },
-  {
-    title: "Locataires Actifs",
-    value: 24,
-    subtitle: "2 nouveaux ce mois",
-    icon: Users,
-    variant: "success" as const,
-    trend: { value: 12, isPositive: true },
-  },
-  {
-    title: "Revenus Mensuels",
-    value: formatFCFA(15800),
-    subtitle: "Mai 2024",
-    icon: CreditCard,
-    variant: "default" as const,
-    trend: { value: 5, isPositive: true },
-  },
-  {
-    title: "Loyers Impayés",
-    value: formatFCFA(2350),
-    subtitle: "3 locataires concernés",
-    icon: AlertTriangle,
-    variant: "destructive" as const,
-    trend: { value: 15, isPositive: false },
-  },
-];
-
-const demoProperties = [
-  {
-    id: "1",
-    name: "Résidence Les Jardins",
-    type: "Immeuble · 8 unités",
-    address: "12 rue des Fleurs, 75001 Paris",
-    status: "loué" as const,
-    tenants: 8,
-    monthlyRent: 6400,
-  },
-  {
-    id: "2",
-    name: "Appartement Haussmann",
-    type: "Appartement · T4",
-    address: "45 avenue Victor Hugo, 75016 Paris",
-    status: "loué" as const,
-    tenants: 1,
-    monthlyRent: 2200,
-  },
-  {
-    id: "3",
-    name: "Studio Saint-Michel",
-    type: "Studio · 25m²",
-    address: "8 rue de la Harpe, 75005 Paris",
-    status: "vacant" as const,
-    tenants: 0,
-    monthlyRent: 850,
-  },
-  {
-    id: "4",
-    name: "Maison de Ville",
-    type: "Maison · 5 pièces",
-    address: "23 allée des Roses, 92100 Boulogne",
-    status: "loué" as const,
-    tenants: 1,
-    monthlyRent: 3200,
-  },
-];
-
-const alerts = [
-  {
-    id: "1",
-    type: "payment" as const,
-    title: "Loyer impayé",
-    description: "M. Dupont - Appartement Haussmann",
-    date: "Il y a 3 jours",
-  },
-  {
-    id: "2",
-    type: "contract" as const,
-    title: "Contrat expire bientôt",
-    description: "Mme Martin - Studio Saint-Michel",
-    date: "Dans 15 jours",
-  },
-  {
-    id: "3",
-    type: "payment" as const,
-    title: "Loyer impayé",
-    description: "M. Bernard - Résidence Les Jardins",
-    date: "Il y a 1 semaine",
-  },
-];
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [loadingChart, setLoadingChart] = useState(true);
+  const [tenantCounts, setTenantCounts] = useState<Record<string, number>>({});
+  
   const [properties, setProperties] = useState<Array<{
     id: string;
     name: string;
@@ -121,71 +28,369 @@ export default function Dashboard() {
     monthly_rent: number;
     image_url?: string;
   }>>([]);
-  
-  // Données de démo pour affichage si aucune propriété réelle
-  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState([
+    {
+      title: "Total Propriétés",
+      value: 0,
+      subtitle: "0 loués · 0 vacants",
+      icon: Building2,
+      variant: "primary" as const,
+    },
+    {
+      title: "Locataires Actifs",
+      value: 0,
+      subtitle: "0 actif(s)",
+      icon: Users,
+      variant: "success" as const,
+    },
+    {
+      title: "Revenus Mensuels",
+      value: formatFCFA(0),
+      subtitle: "Ce mois",
+      icon: CreditCard,
+      variant: "default" as const,
+    },
+    {
+      title: "Loyers Impayés",
+      value: formatFCFA(0),
+      subtitle: "0 locataire(s) concerné(s)",
+      icon: AlertTriangle,
+      variant: "destructive" as const,
+    },
+  ]);
+
+  const [alerts, setAlerts] = useState<Array<{
+    id: string;
+    type: "payment" | "contract" | "maintenance";
+    title: string;
+    description: string;
+    date: string;
+  }>>([]);
+
+  const [chartData, setChartData] = useState<Array<{
+    month: string;
+    revenus: number;
+    depenses: number;
+  }>>([]);
 
   useEffect(() => {
     if (user) {
-      loadProperties();
+      loadDashboardData();
     } else {
       setLoading(false);
+      setLoadingChart(false);
     }
   }, [user]);
 
-  const loadProperties = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    
+  const loadDashboardData = async () => {
+    if (!user) return;
+
     setLoading(true);
+    setLoadingChart(true);
+
     try {
-      const { data, error } = await supabase
+      // 1. Charger les propriétés
+      const { data: propsData, error: propsError } = await supabase
         .from("properties")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(4);
+        .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erreur Supabase lors du chargement des propriétés:", error);
-        // En cas d'erreur, utiliser un tableau vide (les données de démo seront utilisées)
-        setProperties([]);
-        return;
+      if (propsError) {
+        console.warn("Erreur lors du chargement des propriétés:", propsError.message);
       }
 
-      setProperties(data || []);
-    } catch (error: any) {
-      console.error("Erreur inattendue lors du chargement des propriétés:", error);
-      // En cas d'erreur, utiliser un tableau vide (les données de démo seront utilisées)
-      setProperties([]);
+      const propertiesList = propsData || [];
+      setProperties(propertiesList.slice(0, 4)); // Limiter aux 4 plus récentes pour le dashboard
+
+      // 2. Compter les locataires par propriété
+      const propertyIds = propertiesList.map(p => p.id);
+      const counts: Record<string, number> = {};
+      
+      if (propertyIds.length > 0) {
+        try {
+          const { data: tenantsData, error: tenantsCountError } = await supabase
+            .from("tenants")
+            .select("property_id")
+            .eq("user_id", user.id)
+            .in("property_id", propertyIds)
+            .is("move_out_date", null);
+
+          if (tenantsCountError) throw tenantsCountError;
+
+          tenantsData?.forEach(t => {
+            if (t.property_id) {
+              counts[t.property_id] = (counts[t.property_id] || 0) + 1;
+            }
+          });
+        } catch (tErr: any) {
+          console.warn("Erreur lors du comptage des locataires:", tErr.message);
+        }
+      }
+      setTenantCounts(counts);
+
+      // 3. Charger le nombre de locataires actifs globalement
+      let activeTenantsCount = 0;
+      try {
+        const { count, error: countError } = await supabase
+          .from("tenants")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .is("move_out_date", null);
+        
+        if (countError) throw countError;
+        activeTenantsCount = count || 0;
+      } catch (err: any) {
+        console.warn("Impossible de charger le nombre de locataires:", err.message);
+      }
+
+      // 4. Charger les revenus du mois en cours
+      let totalMonthlyRevenue = 0;
+      const now = new Date();
+      const currentMonthStart = startOfMonth(now).toISOString().split("T")[0];
+      const currentMonthEnd = endOfMonth(now).toISOString().split("T")[0];
+      const currentMonthName = format(now, "MMMM yyyy", { locale: fr });
+      const formattedMonthSubtitle = currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1);
+
+      try {
+        const { data: monthlyPaymentsData, error: monthlyPaymentsError } = await supabase
+          .from("payments")
+          .select("amount")
+          .eq("user_id", user.id)
+          .eq("status", "payé")
+          .gte("paid_date", currentMonthStart)
+          .lte("paid_date", currentMonthEnd);
+
+        if (monthlyPaymentsError) throw monthlyPaymentsError;
+        totalMonthlyRevenue = monthlyPaymentsData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      } catch (err: any) {
+        console.warn("Erreur lors du chargement des revenus mensuels:", err.message);
+      }
+
+      // 5. Charger les loyers impayés (en retard ou en attente)
+      let totalUnpaid = 0;
+      let concernedTenantsCount = 0;
+
+      try {
+        const { data: unpaidPaymentsData, error: unpaidPaymentsError } = await supabase
+          .from("payments")
+          .select("amount, tenant_id")
+          .eq("user_id", user.id)
+          .in("status", ["en retard", "en attente"]);
+
+        if (unpaidPaymentsError) throw unpaidPaymentsError;
+        totalUnpaid = unpaidPaymentsData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+        concernedTenantsCount = new Set(unpaidPaymentsData?.map(p => p.tenant_id)).size;
+      } catch (err: any) {
+        console.warn("Erreur lors du chargement des loyers impayés:", err.message);
+      }
+
+      // Calcul des statistiques
+      const totalProps = propertiesList.length;
+      const rentedProps = propertiesList.filter(p => p.status === "loué").length;
+      const vacantProps = propertiesList.filter(p => p.status === "vacant").length;
+
+      setStats([
+        {
+          title: "Total Propriétés",
+          value: totalProps,
+          subtitle: `${rentedProps} loués · ${vacantProps} vacants`,
+          icon: Building2,
+          variant: "primary" as const,
+        },
+        {
+          title: "Locataires Actifs",
+          value: activeTenantsCount,
+          subtitle: `${activeTenantsCount} actif(s)`,
+          icon: Users,
+          variant: "success" as const,
+        },
+        {
+          title: "Revenus Mensuels",
+          value: formatFCFA(totalMonthlyRevenue),
+          subtitle: formattedMonthSubtitle,
+          icon: CreditCard,
+          variant: "default" as const,
+        },
+        {
+          title: "Loyers Impayés",
+          value: formatFCFA(totalUnpaid),
+          subtitle: `${concernedTenantsCount} locataire(s) concerné(s)`,
+          icon: AlertTriangle,
+          variant: "destructive" as const,
+        },
+      ]);
+
+      // 6. Charger les alertes
+      const todayStr = new Date().toISOString().split("T")[0];
+      const newAlerts: Array<{
+        id: string;
+        type: "payment" | "contract" | "maintenance";
+        title: string;
+        description: string;
+        date: string;
+      }> = [];
+
+      // Charger les paiements en retard
+      try {
+        const { data: latePaymentsData, error: lateError } = await supabase
+          .from("payments")
+          .select(`
+            id,
+            amount,
+            due_date,
+            tenants (
+              full_name
+            )
+          `)
+          .eq("user_id", user.id)
+          .in("status", ["en retard", "en attente"])
+          .lt("due_date", todayStr)
+          .order("due_date", { ascending: true })
+          .limit(3);
+
+        if (lateError) throw lateError;
+
+        latePaymentsData?.forEach(p => {
+          const tenantName = (p.tenants as any)?.full_name || "Locataire";
+          const daysOverdue = Math.floor((new Date().getTime() - new Date(p.due_date).getTime()) / (1000 * 60 * 60 * 24));
+          
+          newAlerts.push({
+            id: `pay-${p.id}`,
+            type: "payment" as const,
+            title: "Loyer impayé",
+            description: `${tenantName} - Loyer de ${formatFCFA(Number(p.amount))}`,
+            date: daysOverdue === 0 ? "Aujourd'hui" : `Il y a ${daysOverdue} jour${daysOverdue > 1 ? "s" : ""}`,
+          });
+        });
+      } catch (err: any) {
+        console.warn("Erreur lors du chargement des alertes de paiement:", err.message);
+      }
+
+      // Charger les contrats expirant bientôt
+      try {
+        const thirtyDaysFromNowStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+        const { data: expiringContractsData, error: contractError } = await supabase
+          .from("contracts")
+          .select("id, title, expires_at, tenant_name")
+          .eq("user_id", user.id)
+          .lte("expires_at", thirtyDaysFromNowStr)
+          .order("expires_at", { ascending: true })
+          .limit(3);
+
+        if (contractError) throw contractError;
+
+        expiringContractsData?.forEach(c => {
+          if (c.expires_at) {
+            const expDate = new Date(c.expires_at);
+            const isExpired = expDate < new Date();
+            const diffTime = expDate.getTime() - new Date().getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            newAlerts.push({
+              id: `con-${c.id}`,
+              type: "contract" as const,
+              title: isExpired ? "Contrat expiré" : "Contrat expire bientôt",
+              description: `${c.tenant_name} - ${c.title}`,
+              date: isExpired ? "Dépassé" : `Dans ${diffDays} jour${diffDays > 1 ? "s" : ""}`,
+            });
+          }
+        });
+      } catch (err: any) {
+        console.warn("Erreur lors du chargement des alertes de contrat:", err.message);
+      }
+
+      setAlerts(newAlerts);
+
+      // 7. Charger les données financières des 6 derniers mois pour le graphique
+      try {
+        const monthsCount = 6;
+        const chartStartDate = startOfMonth(subMonths(new Date(), monthsCount - 1));
+        const chartEndDate = endOfMonth(new Date());
+
+        const { data: chartPayments, error: chartPayErr } = await supabase
+          .from("payments")
+          .select("amount, paid_date")
+          .eq("user_id", user.id)
+          .eq("status", "payé")
+          .gte("paid_date", chartStartDate.toISOString().split("T")[0])
+          .lte("paid_date", chartEndDate.toISOString().split("T")[0]);
+
+        if (chartPayErr) throw chartPayErr;
+
+        const { data: chartExpenses, error: chartExpErr } = await supabase
+          .from("expenses")
+          .select("amount, expense_date")
+          .eq("user_id", user.id)
+          .gte("expense_date", chartStartDate.toISOString().split("T")[0])
+          .lte("expense_date", chartEndDate.toISOString().split("T")[0]);
+
+        if (chartExpErr) throw chartExpErr;
+
+        const monthlyMap = new Map<string, { revenus: number; depenses: number }>();
+
+        // Initialiser les 6 derniers mois
+        for (let i = 0; i < monthsCount; i++) {
+          const date = subMonths(new Date(), monthsCount - 1 - i);
+          const monthLabel = format(date, "MMM", { locale: fr });
+          const formattedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+          monthlyMap.set(formattedLabel, { revenus: 0, depenses: 0 });
+        }
+
+        // Ajouter les revenus
+        chartPayments?.forEach(p => {
+          if (p.paid_date) {
+            const monthLabel = format(new Date(p.paid_date), "MMM", { locale: fr });
+            const formattedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+            const current = monthlyMap.get(formattedLabel);
+            if (current) {
+              current.revenus += Number(p.amount);
+            }
+          }
+        });
+
+        // Ajouter les dépenses
+        chartExpenses?.forEach(e => {
+          if (e.expense_date) {
+            const monthLabel = format(new Date(e.expense_date), "MMM", { locale: fr });
+            const formattedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+            const current = monthlyMap.get(formattedLabel);
+            if (current) {
+              current.depenses += Number(e.amount);
+            }
+          }
+        });
+
+        const formattedChartData = Array.from(monthlyMap.entries()).map(([month, val]) => ({
+          month,
+          revenus: val.revenus,
+          depenses: val.depenses,
+        }));
+
+        setChartData(formattedChartData);
+      } catch (err: any) {
+        console.warn("Erreur lors du chargement des données financières pour le graphique:", err.message);
+      }
+
+    } catch (globalErr) {
+      console.error("Erreur générale lors du chargement du tableau de bord:", globalErr);
     } finally {
       setLoading(false);
+      setLoadingChart(false);
     }
   };
 
-  // Utiliser les données réelles si disponibles, sinon les données de démo
-  const displayProperties = properties.length > 0 
-    ? properties.map(p => ({
-        id: p.id,
-        name: p.name,
-        type: p.type,
-        address: p.address,
-        status: p.status,
-        tenants: 0, // TODO: Calculer le nombre de locataires
-        monthlyRent: p.monthly_rent,
-        imageUrl: p.image_url,
-      }))
-    : demoProperties.map(p => ({
-        id: p.id,
-        name: p.name,
-        type: p.type,
-        address: p.address,
-        status: p.status,
-        tenants: p.tenants,
-        monthlyRent: p.monthlyRent,
-      }));
+  const displayProperties = properties.map(p => ({
+    id: p.id,
+    name: p.name,
+    type: p.type,
+    address: p.address,
+    status: p.status,
+    tenants: tenantCounts[p.id] || 0,
+    monthlyRent: p.monthly_rent,
+    imageUrl: p.image_url,
+  }));
 
   return (
     <DashboardLayout>
@@ -216,7 +421,7 @@ export default function Dashboard() {
 
       {/* Charts and Alerts */}
       <div className="grid gap-6 lg:grid-cols-3 mb-8">
-        <RevenueChart className="lg:col-span-2" />
+        <RevenueChart data={chartData} loading={loadingChart} className="lg:col-span-2" />
         <AlertCard alerts={alerts} />
       </div>
 
