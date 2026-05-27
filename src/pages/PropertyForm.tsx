@@ -320,7 +320,7 @@ export default function PropertyForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">Ville</Label>
                   <Input
@@ -334,26 +334,33 @@ export default function PropertyForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="postal_code">Code postal</Label>
-                  <Input
-                    id="postal_code"
-                    placeholder="Ex: 01 BP"
-                    value={formData.postal_code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, postal_code: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="country">Pays</Label>
-                  <Input
-                    id="country"
+                  <Select
                     value={formData.country}
-                    onChange={(e) =>
-                      setFormData({ ...formData, country: e.target.value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, country: value })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un pays" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Côte d'Ivoire">Côte d'Ivoire</SelectItem>
+                      <SelectItem value="Sénégal">Sénégal</SelectItem>
+                      <SelectItem value="Cameroun">Cameroun</SelectItem>
+                      <SelectItem value="Mali">Mali</SelectItem>
+                      <SelectItem value="Burkina Faso">Burkina Faso</SelectItem>
+                      <SelectItem value="Bénin">Bénin</SelectItem>
+                      <SelectItem value="Togo">Togo</SelectItem>
+                      <SelectItem value="Gabon">Gabon</SelectItem>
+                      <SelectItem value="Congo (RC)">Congo (RC)</SelectItem>
+                      <SelectItem value="Congo (RDC)">Congo (RDC)</SelectItem>
+                      <SelectItem value="Guinée">Guinée</SelectItem>
+                      <SelectItem value="Niger">Niger</SelectItem>
+                      <SelectItem value="France">France</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -364,7 +371,7 @@ export default function PropertyForm() {
                 Caractéristiques
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="monthly_rent">Loyer mensuel (FCFA) *</Label>
                   <Input
@@ -376,19 +383,6 @@ export default function PropertyForm() {
                       setFormData({ ...formData, monthly_rent: e.target.value })
                     }
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="surface_area">Surface (m²)</Label>
-                  <Input
-                    id="surface_area"
-                    type="number"
-                    placeholder="Ex: 80"
-                    value={formData.surface_area}
-                    onChange={(e) =>
-                      setFormData({ ...formData, surface_area: e.target.value })
-                    }
                   />
                 </div>
 
