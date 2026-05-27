@@ -1,78 +1,58 @@
-# Configuration Supabase - Guide Rapide
+# Configuration Supabase - Guide de Démarrage
 
-## 🚀 Configuration complète en une seule étape
+## 🚀 Configuration en une seule étape
 
-### Exécuter le script SQL complet
+Pour configurer l'ensemble de votre base de données Supabase, vous n'avez besoin d'exécuter qu'un seul script unifié :
 
 1. Allez sur votre projet Supabase : https://supabase.com/dashboard
-2. Sélectionnez votre projet
-3. Allez dans **SQL Editor** (menu de gauche)
-4. Cliquez sur **New Query**
-5. Copiez-collez le contenu du fichier `supabase-setup-complete.sql`
-6. Cliquez sur **Run** (ou appuyez sur Ctrl+Enter)
+2. Sélectionnez votre projet.
+3. Allez dans **SQL Editor** (menu latéral gauche).
+4. Cliquez sur **New Query**.
+5. Copiez et collez l'intégralité du fichier `supabase-setup-complete.sql`.
+6. Cliquez sur **Run** (ou faites Ctrl + Enter).
 
-✅ **C'est tout !** Le script crée automatiquement :
-- Toutes les tables (properties, tenants, payments, payment_notifications)
-- Tous les index pour les performances
-- Toutes les fonctions (notifications email, etc.)
-- Toutes les politiques de sécurité (RLS)
-- Toutes les permissions
+✅ **Félicitations !** Le script configurera automatiquement :
+- **Toutes les tables nécessaires** : `profiles`, `properties`, `tenants`, `payments`, `payment_notifications`, `expenses`, `contracts`.
+- Les index de performance pour accélérer les requêtes.
+- La fonction et le trigger `on_auth_user_created` pour créer automatiquement le profil d'un utilisateur dans la table `profiles` lors de son inscription.
+- La sécurité **Row Level Security (RLS)** sur chaque table pour s'assurer que les utilisateurs ne puissent lire ou écrire que leurs propres données.
+- Le bucket de stockage privé `contracts` pour vos contrats de location avec ses règles de sécurité RLS.
+- Les fonctions automatiques de relances de paiement et la vue associée.
+
+---
 
 ## 📋 Vérification
 
-Après l'exécution, vérifiez que tout est créé :
+Après avoir exécuté le script SQL, vous pouvez exécuter cette requête de test dans l'éditeur SQL pour valider la création de toutes les tables :
 
 ```sql
--- Vérifier les tables
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('properties', 'tenants', 'payments', 'payment_notifications')
+AND table_name IN ('profiles', 'properties', 'tenants', 'payments', 'payment_notifications', 'expenses', 'contracts')
 ORDER BY table_name;
-
--- Vérifier les fonctions
-SELECT routine_name 
-FROM information_schema.routines 
-WHERE routine_schema = 'public' 
-AND routine_name IN ('check_and_create_payment_notifications', 'mark_notification_sent')
-ORDER BY routine_name;
 ```
 
-Vous devriez voir :
-- 4 tables
-- 2 fonctions
+Vous devriez obtenir **7 lignes** correspondant aux 7 tables.
 
-## 🔄 Réinitialiser les données pour un nouvel utilisateur
+---
 
-Si vous voulez réinitialiser les données d'un utilisateur spécifique :
+## 🔄 Réinitialiser les données d'un utilisateur
 
-1. Exécutez `supabase-reset-user-data.sql`
-2. **Important** : Remplacez `'USER_ID_HERE'` par l'ID réel de l'utilisateur
+Si vous souhaitez supprimer toutes les données d'un utilisateur pour faire un test propre :
+1. Ouvrez `supabase-reset-user-data.sql`
+2. Remplacez `'USER_ID_HERE'` par l'ID UUID de l'utilisateur (que vous trouverez dans l'onglet Authentication de Supabase ou via la table `auth.users`).
+3. Exécutez le script dans le SQL Editor.
 
-Pour trouver l'ID :
-```sql
-SELECT id, email, created_at 
-FROM auth.users 
-ORDER BY created_at DESC;
+---
+
+## 🔧 Variables d'environnement locales
+
+Pour faire tourner le projet localement avec votre instance Supabase, assurez-vous que votre fichier `.env` à la racine contient les clés suivantes :
+
+```env
+VITE_SUPABASE_URL=https://votre-projet.supabase.co
+VITE_SUPABASE_ANON_KEY=votre-cle-anon-publique-jwt
 ```
 
-## ⚠️ Notes importantes
-
-- Le script est **idempotent** : vous pouvez l'exécuter plusieurs fois sans erreur
-- Il ne supprime pas les données existantes
-- Il crée uniquement ce qui n'existe pas déjà
-- Les politiques RLS sont recréées à chaque exécution (pour les mises à jour)
-
-## 🆘 Problèmes courants
-
-### Erreur "relation does not exist"
-- Exécutez d'abord `supabase-setup-complete.sql`
-- Vérifiez que vous êtes dans le bon projet Supabase
-
-### Erreur de permissions
-- Vérifiez que vous êtes connecté en tant qu'administrateur du projet
-- Vérifiez que RLS est activé sur les tables
-
-### Les données ne s'affichent pas
-- Vérifiez que les politiques RLS sont créées
-- Vérifiez que vous êtes connecté avec un compte utilisateur valide
+*Note : Vite exige que les variables destinées au client soient préfixées par `VITE_` pour des raisons de sécurité.*
